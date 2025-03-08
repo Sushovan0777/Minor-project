@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cataract Detection</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1500px;
+            margin: 100 auto;
+            padding: 20px;
+        }
+        .image-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .image-container img {
+            max-width: 40%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="width: 805px; height: 550px;">
+        <h1>Cataract Detection System</h1>
+        <p class="subtitle">Upload an image to get the segmentation mask of cataract.</p>
+        
+        <form id="upload-form" class="form-box">
+            <input type="file" name="file" accept="image/*" required>
+            <button type="submit" class="btn">Analyze Image</button>
+        </form>
+
+        <div class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing image...</p>
+        </div>
+
+        <div id="result"></div>
+
+        <div class="image-container">
+            <div class="image-box">
+                <h3>Original Image</h3>
+                <img id="original-image" src="" style="display: none;margin-top: 30px;">
+            </div>
+            <div class="image-box">
+                <h3>Segmented Mask and Heat map</h3>
+                <img id="prediction-image" src="" style="display: none;margin-top: 40px;">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#upload-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                $('.loading').show();
+                $('#result').html('');
+                $('#original-image').hide();
+                $('#prediction-image').hide();
+                
+                var formData = new FormData(this);
+                
+                $.ajax({
+                    url: '/predict',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('.loading').hide();
+                        
+                        if (response.error) {
+                            $('#result').html('<div class="error">' + response.error + '</div>');
+                            return;
+                        }
+                        
+                        // Show original image
+                        if (response.original_image) {
+                            $('#original-image').attr('src', response.original_image).show();
+                            $('#original-image').css({
+                                'transform': 'scale(1.5)',   // Double the size
+                                'transform-origin': 'center' // Scale from the center
+                            });
+                        }
+                        
+                        // Show heatmap if available
+                        if (response.prediction_image) {
+                            $('#prediction-image').attr('src', response.prediction_image).show();
+                            $('#prediction-image').css({
+                                'transform': 'scale(2)',   // Double the size
+                                'transform-origin': 'center' // Scale from the center
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('.loading').hide();
+                        $('#result').html('<div class="error">An error occurred during processing.</div>');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
